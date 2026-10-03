@@ -199,7 +199,8 @@ fi
 # up. Major.minor only — otool prints the encoded version, which
 # may carry a patch component the SDK query does not.
 STAMPED_SDK=$(otool -l "$BUILT/KiwiDesk" | awk \
-    '/LC_BUILD_VERSION/ {v=1} v && $1 == "sdk" {print $2; exit}')
+    '/LC_BUILD_VERSION/ {v=1}
+     v && $1 == "sdk" && !seen {print $2; seen=1}')
 major_minor() { printf '%s' "$1" | cut -d. -f1,2; }
 if [ "$(major_minor "$STAMPED_SDK")" \
     != "$(major_minor "$SDK_VERSION")" ]; then

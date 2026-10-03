@@ -229,4 +229,38 @@ struct BuildStampTests {
         #expect(run.status == 0, "stderr: \(run.stderr)")
         #expect(run.stderr.isEmpty)
     }
+
+    @Test("the SDK read drains the producer under pipefail")
+    func sdkReadDrainsProducer() throws {
+        let text = try script()
+        let start = try index(
+            #"STAMPED_SDK=$(otool -l "$BUILT/KiwiDesk""#,
+            in: text,
+            "the otool stamp read is gone"
+        )
+        let end = try index("major_minor()", in: text, "comparison is gone")
+        let from = text.index(text.startIndex, offsetBy: start)
+        let to = text.index(text.startIndex, offsetBy: end)
+        let producer = """
+            import signal
+            import sys
+            signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+            sys.stdout.write(
+                "cmd LC_BUILD_VERSION\\nsdk 27.0\\n"
+                + "padding\\n" * 100000
+            )
+            """
+        let command = """
+            set -euo pipefail
+            otool() { /usr/bin/python3 -c '\(producer)'; }
+            BUILT=/tmp
+            \(String(text[from..<to]))
+            printf '%s\\n' "$STAMPED_SDK"
+            """
+        let run = try spawn("/bin/bash", ["-c", command])
+        #expect(run.status == 0)
+        #expect(run.stdout == "27.0\n")
+        #expect(run.stderr.isEmpty)
+    }
+
 }
