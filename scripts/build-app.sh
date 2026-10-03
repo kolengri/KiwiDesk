@@ -18,7 +18,9 @@
 #                keychain is used, falling back to "-" (ad-hoc)
 #                when there is none — so this needs no argument
 #                on a release machine nor on a contributor's.
-#                Ad-hoc works with no Apple account, but its code
+#                Ad-hoc omits Hardened Runtime so embedded
+#                frameworks without a Team ID can load locally.
+#                It works with no Apple account, but its code
 #                identity IS the binary hash, so macOS treats
 #                every rebuild as a different app and the
 #                Accessibility grant resets each time. Any stable
@@ -60,7 +62,8 @@ Usage: scripts/build-app.sh [options]
 
   --identity <id>    Signing identity. Omit to use the sole
                      "Developer ID Application" in the keychain,
-                     falling back to "-" (ad-hoc) when none.
+                     falling back to "-" (ad-hoc, without
+                     Hardened Runtime) when none.
   --notarize <prof>  Submit to Apple and staple, via a notarytool
                      keychain profile (needs a Developer ID).
   --output <dir>     Where to write the bundle (default .build/app).
@@ -487,8 +490,11 @@ echo "==> codesign (identity: $IDENTITY)"
 # signature cannot carry one — so it is requested for every real
 # identity and only skipped for "-".
 TS=(--timestamp)
+RUNTIME=(--options runtime)
 if [ "$IDENTITY" = "-" ]; then
     TS=(--timestamp=none)
+    # Ad-hoc has no Team ID for Hardened Runtime's library check.
+    RUNTIME=(--options 0)
     echo "    note: ad-hoc — the Accessibility grant will reset" \
          "on every rebuild, and this cannot be notarized."
 fi
@@ -529,22 +535,24 @@ do
              "produce an app that fails notarization." >&2
         exit 1
     fi
-    codesign --force "${TS[@]}" --options runtime \
+    codesign --force "${TS[@]}" "${RUNTIME[@]}" \
         --sign "$IDENTITY" "$SPARKLE_V/$nested"
     echo "    signed: Sparkle.framework/$nested"
 done
-codesign --force "${TS[@]}" --options runtime \
+codesign --force "${TS[@]}" "${RUNTIME[@]}" \
     --sign "$IDENTITY" "$SPARKLE_FW"
 echo "    signed: Sparkle.framework"
 
 for b in "$RES"/*.bundle; do
     [ -e "$b" ] || continue
-    codesign --force "${TS[@]}" --options runtime \
+    codesign --force "${TS[@]}" "${RUNTIME[@]}" \
         --sign "$IDENTITY" "$b"
 done
-codesign --force "${TS[@]}" --options runtime \
+codesign --force "${TS[@]}" "${RUNTIME[@]}" \
     --sign "$IDENTITY" "$APP"
 codesign --verify --deep --strict "$APP"
+echo "==> checking packaged executable"
+"$MACOS/KiwiDesk" --version
 
 # ---------------------------------------------------------------
 # 6. Notarize (optional)
