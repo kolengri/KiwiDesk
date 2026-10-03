@@ -90,7 +90,8 @@ extension KeyboardHoverReading {
         scope: KeyboardCensus.Scope,
         selected: Set<KeyboardCensus.ModifierLayer>,
         config: GuiConfig,
-        disabled: Set<SystemShortcut>
+        disabled: Set<SystemShortcut>,
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> KeyboardHoverReading {
         let all = layers.flatMap(\.bindings)
         let ringed = KeyboardCensus.ringedKeys(
@@ -130,7 +131,10 @@ extension KeyboardHoverReading {
             freeOwner: claims.isEmpty
                 ? owner?.localizedName : nil,
             scopeChord: KeyboardCensus.chordLabel(of: scope),
-            keyName: KeyboardBoardSpoken.spokenName(for: code)
+            keyName: KeyboardBoardSpoken.spokenName(
+                for: code,
+                glyph: glyph
+            )
         )
     }
 }

@@ -62,6 +62,7 @@ struct QuickMenuProfileRowTests {
     func shortcutsNativeEquivalent() {
         reset()
         let controller = controller(active: nil, all: [])
+        controller.keyGlyph = { [40: "k"][$0] }
         controller.shortcutsComboProvider = {
             KeyCombo(
                 keyCode: 40,
@@ -86,6 +87,7 @@ struct QuickMenuProfileRowTests {
     func settingsNativeEquivalent() {
         reset()
         let controller = controller(active: nil, all: [])
+        controller.keyGlyph = { [43: ","][$0] }
         var menu = NSMenu()
         controller.menuNeedsUpdate(menu)
         var item = menu.items.first { $0.title == "Settings…" }

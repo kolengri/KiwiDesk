@@ -103,7 +103,7 @@ extension StatusItemController {
         // right-aligned treatment; its duplicate keyboard action
         // is ignored in `showShortcuts` below.
         if let combo = shortcutsComboProvider() {
-            Self.applyMenuEquivalent(combo, to: shortcuts)
+            applyMenuEquivalent(combo, to: shortcuts)
         }
         menu.addItem(shortcuts)
         let settings = NSMenuItem(
@@ -117,7 +117,7 @@ extension StatusItemController {
         // `⌘,` above is the app menu's, which fires only while a
         // KiwiDesk window is key.
         if let combo = settingsComboProvider() {
-            Self.applyMenuEquivalent(combo, to: settings)
+            applyMenuEquivalent(combo, to: settings)
         }
         menu.addItem(settings)
 
@@ -209,7 +209,7 @@ extension StatusItemController {
         return parent
     }
 
-    private static func applyMenuEquivalent(
+    private func applyMenuEquivalent(
         _ combo: KeyCombo,
         to item: NSMenuItem
     ) {
@@ -231,7 +231,7 @@ extension StatusItemController {
         item.keyEquivalentModifierMask = modifiers
     }
 
-    private static func menuKey(for code: UInt32) -> String? {
+    private func menuKey(for code: UInt32) -> String? {
         let special: [UInt32: String] = [
             36: "\r", 76: "\u{3}", 48: "\t", 49: " ",
             51: "\u{8}", 117: "\u{7F}", 53: "\u{1B}",
@@ -247,7 +247,7 @@ extension StatusItemController {
             103: "\u{F70E}", 111: "\u{F70F}",
         ]
         return special[code]
-            ?? LayoutKeyGlyph.char(for: code)?.lowercased()
+            ?? keyGlyph(code)?.lowercased()
     }
 
     @objc private func openDashboard() {
