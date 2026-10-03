@@ -16,6 +16,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// The combo bound to Open Settings (#1381), read the same way;
     /// nil keeps the app menu's `⌘,`.
     var settingsComboProvider: () -> KeyCombo? = { nil }
+    /// Printable menu keys follow the active layout.
+    var keyGlyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     /// Whether the menu action firing now was AppKit's keyDown
     /// for a chord Carbon already answered — the one reading
     /// both chrome actions drop their duplicate on; injected so

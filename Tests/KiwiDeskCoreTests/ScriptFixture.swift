@@ -110,18 +110,21 @@ func spawn(
     process.standardOutput = stdoutPipe
     process.standardError = stderrPipe
     try process.run()
-    // Read before waiting, so a script whose stdout outgrows the
-    // pipe buffer cannot block on write while the test blocks on
-    // exit. This is sequential, so it is not a general guarantee:
-    // a child that filled its *stderr* buffer before closing
-    // stdout would still deadlock. Sound for these scripts (a few
-    // lines of stderr at most) and strictly better than the
-    // hand-copies it replaced, one of which never drained stdout
-    // at all. Concurrent drains are the fix if that ever changes.
-    let outData = stdoutPipe.fileHandleForReading
-        .readDataToEndOfFile()
+    try? stdoutPipe.fileHandleForWriting.close()
+    try? stderrPipe.fileHandleForWriting.close()
+    // A global queue can starve behind the cooperative test executor.
+    let stdoutRead = ScriptPipeRead()
+    let completed = DispatchGroup()
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    completed.enter()
+    Thread {
+        stdoutRead.read(from: stdoutHandle)
+        completed.leave()
+    }.start()
     let errData = stderrPipe.fileHandleForReading
         .readDataToEndOfFile()
+    completed.wait()
+    let outData = stdoutRead.data
     process.waitUntilExit()
     return ScriptRun(
         status: process.terminationStatus,
@@ -332,4 +335,16 @@ func runRepoScript(
         arguments: arguments,
         environment: environment
     )
+}
+
+/// The lock protects a pipe reader's result across its worker and caller.
+private final class ScriptPipeRead: @unchecked Sendable {
+    private let lock = NSLock()
+    private var result = Data()
+
+    var data: Data { lock.withLock { result } }
+
+    func read(from handle: FileHandle) {
+        lock.withLock { result = handle.readDataToEndOfFile() }
+    }
 }

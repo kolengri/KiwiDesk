@@ -26,6 +26,19 @@ struct OnboardingKeysTests {
         return layer
     }
 
+    private func families(
+        layer: KeyLayer,
+        spaces: [SpaceID]
+    ) -> [OnboardingKeyFamily] {
+        OnboardingKeys.families(
+            layer: layer,
+            spaces: spaces,
+            glyph: { code in
+                [43: ","][code] ?? KeyCombo.keyName(for: code)
+            }
+        )
+    }
+
     private var arrows: [(String, String)] {
         [
             ("control+option+left", "KiwiDesk.focus(\"left\")"),
@@ -41,7 +54,7 @@ struct OnboardingKeysTests {
 
     @Test("a shared modifier set collapses to one prefix")
     func directionalCollapses() {
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(arrows),
             spaces: []
         )
@@ -58,7 +71,7 @@ struct OnboardingKeysTests {
         // a chord they do not have.
         var mixed = arrows
         mixed[2] = ("control+command+up", "KiwiDesk.focus(\"up\")")
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(mixed),
             spaces: []
         )
@@ -75,7 +88,7 @@ struct OnboardingKeysTests {
                 "KiwiDesk.focus_space(\"\(digit)\")"
             )
         }
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(5)
         )
@@ -92,7 +105,7 @@ struct OnboardingKeysTests {
     /// for the gateway row (owner, on device, 2026-08-12).
     @Test("one space is a digit, never a range of one")
     func singleSpaceIsNotARange() {
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer([
                 (
                     "control+option+1",
@@ -118,7 +131,7 @@ struct OnboardingKeysTests {
                 "KiwiDesk.focus_space(\"\(digit)\")"
             )
         }
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(5)
         )
@@ -144,7 +157,7 @@ struct OnboardingKeysTests {
                 "KiwiDesk.focus_space(\"\(digit)\")"
             )
         }
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(5)
         )
@@ -166,7 +179,7 @@ struct OnboardingKeysTests {
         bindings.append(
             ("control+option+0", "KiwiDesk.focus_space(\"10\")")
         )
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(10)
         )
@@ -179,7 +192,7 @@ struct OnboardingKeysTests {
         // The tour teaches what is BOUND. A row with an empty
         // chord would be teaching nothing while looking like a
         // promise.
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer([]),
             spaces: spaces(3)
         )
@@ -188,7 +201,7 @@ struct OnboardingKeysTests {
 
     @Test("an empty combo counts as unbound, not as a chord")
     func emptyComboIsNotAChord() {
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer([("", "KiwiDesk.focus(\"left\")")]),
             spaces: []
         )
@@ -207,7 +220,7 @@ struct OnboardingKeysTests {
                 )
             }
             + [("control+option+k", ShortcutsOpenBinding.lua)]
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(3)
         )
@@ -227,12 +240,12 @@ struct OnboardingKeysTests {
     /// and, like every family, draws no row when unbound.
     @Test("a bound Open Settings chord is taught, an unbound one is not")
     func openSettingsIsTaughtWhenBound() {
-        let unbound = OnboardingKeys.families(
+        let unbound = families(
             layer: layer(arrows),
             spaces: spaces(1)
         )
         #expect(!unbound.contains { $0.id == "settings" })
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(
                 arrows + [
                     (
@@ -279,7 +292,7 @@ struct OnboardingKeysTests {
                         + "(\"\(digit)\")"
                 )
             }
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(3)
         )
@@ -315,7 +328,7 @@ struct OnboardingKeysTests {
                     "KiwiDesk.focus_space(\"\(digit)\")"
                 )
             }
-        let families = OnboardingKeys.families(
+        let families = families(
             layer: layer(bindings),
             spaces: spaces(5)
         )

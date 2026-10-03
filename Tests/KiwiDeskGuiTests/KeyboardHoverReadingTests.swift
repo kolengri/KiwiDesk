@@ -59,7 +59,8 @@ struct KeyboardHoverReadingTests {
             scope: scope,
             selected: selected,
             config: config(l),
-            disabled: []
+            disabled: [],
+            glyph: { [38: "j", 40: "k"][$0] }
         )
     }
 

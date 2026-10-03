@@ -14,7 +14,8 @@ extension OnboardingKeys {
     /// rendering of a keymap that has been edited apart.
     static func directional(
         layer: KeyLayer,
-        command: String
+        command: String,
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> OnboardingChord? {
         let combos = directions.compactMap { direction in
             layer.bindings.first {
@@ -23,9 +24,9 @@ extension OnboardingKeys {
             }?.combo
         }
         guard combos.count == directions.count else {
-            return listed(combos)
+            return listed(combos, glyph: glyph)
         }
-        return collapsed(combos) ?? listed(combos)
+        return collapsed(combos, glyph: glyph) ?? listed(combos, glyph: glyph)
     }
 
     /// Formats space digit chords as a range (e.g. `⌃⌥ 1–5`) or
@@ -33,7 +34,8 @@ extension OnboardingKeys {
     static func digits(
         layer: KeyLayer,
         command: String,
-        spaces: [SpaceID]
+        spaces: [SpaceID],
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> OnboardingChord? {
         let combos = spaces.compactMap { space in
             layer.bindings.first {
@@ -45,7 +47,7 @@ extension OnboardingKeys {
         }
         guard let first = combos.first,
             let parsed = KeyCombo.parse(first),
-            let head = keyOnly(combo: first)
+            let head = keyOnly(combo: first, glyph: glyph)
         else { return nil }
         let modifiers = parsed.modifiers
         guard combos.count > 1 else {
@@ -53,9 +55,12 @@ extension OnboardingKeys {
         }
         // Require contiguous digits sharing modifiers to format as a range.
         guard sameModifiers(combos),
-            let run = contiguousDigits(combos)
+            let run = contiguousDigits(combos, glyph: glyph)
         else {
-            return collapsed(combos) ?? listed(combos)
+            return collapsed(combos, glyph: glyph) ?? listed(
+                combos,
+                glyph: glyph
+            )
                 ?? .shared(modifiers, keys: head)
         }
         return .shared(
@@ -67,9 +72,10 @@ extension OnboardingKeys {
     /// The first and last key glyph, but only when every chord in
     /// between is a single digit stepping up by one.
     static func contiguousDigits(
-        _ combos: [String]
+        _ combos: [String],
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> (first: String, last: String)? {
-        let keys = combos.compactMap { keyOnly(combo: $0) }
+        let keys = combos.compactMap { keyOnly(combo: $0, glyph: glyph) }
         guard keys.count == combos.count else { return nil }
         let values = keys.compactMap { key -> Int? in
             guard key.count == 1 else { return nil }
@@ -88,13 +94,14 @@ extension OnboardingKeys {
 
     /// The shared modifiers once, then each chord's key glyph.
     static func collapsed(
-        _ combos: [String]
+        _ combos: [String],
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> OnboardingChord? {
         guard sameModifiers(combos),
             let first = combos.first,
             let parsed = KeyCombo.parse(first)
         else { return nil }
-        let keys = combos.compactMap { keyOnly(combo: $0) }
+        let keys = combos.compactMap { keyOnly(combo: $0, glyph: glyph) }
         guard keys.count == combos.count else { return nil }
         return .shared(
             parsed.modifiers,
@@ -103,9 +110,10 @@ extension OnboardingKeys {
     }
 
     static func listed(
-        _ combos: [String]
+        _ combos: [String],
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> OnboardingChord? {
-        let each = combos.compactMap { rendered(combo: $0) }
+        let each = combos.compactMap { rendered(combo: $0, glyph: glyph) }
         return each.isEmpty
             ? nil : .mixed(each.joined(separator: "  "))
     }
@@ -121,9 +129,12 @@ extension OnboardingKeys {
 
     /// A chord's key glyph alone — the full render minus the
     /// modifier symbols it starts with.
-    static func keyOnly(combo: String) -> String? {
+    static func keyOnly(
+        combo: String,
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
+    ) -> String? {
         guard let parsed = KeyCombo.parse(combo),
-            let full = rendered(combo: combo)
+            let full = rendered(combo: combo, glyph: glyph)
         else { return nil }
         let modifiers = ComboSymbols.modifierSymbols(
             parsed.modifiers
@@ -134,13 +145,14 @@ extension OnboardingKeys {
 
     /// Splits a single chord into shared modifiers and key glyph.
     static func single(
-        combo: String?
+        combo: String?,
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> OnboardingChord? {
         guard let combo,
             let parsed = KeyCombo.parse(combo),
-            let key = keyOnly(combo: combo)
+            let key = keyOnly(combo: combo, glyph: glyph)
         else {
-            guard let full = rendered(combo: combo) else {
+            guard let full = rendered(combo: combo, glyph: glyph) else {
                 return nil
             }
             return .mixed(full)
@@ -149,14 +161,17 @@ extension OnboardingKeys {
     }
 
     /// Renders combo string with layout glyphs via `ComboSymbols`.
-    static func rendered(combo: String?) -> String? {
+    static func rendered(
+        combo: String?,
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
+    ) -> String? {
         guard let combo, !combo.isEmpty else { return nil }
         guard let parsed = KeyCombo.parse(combo) else {
             return combo
         }
         return ComboSymbols.render(
             parsed,
-            layoutChar: LayoutKeyGlyph.char
+            layoutChar: glyph
         )
     }
 }

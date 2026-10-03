@@ -7,12 +7,14 @@ import KiwiDeskCore
 enum OnboardingKeys {
     static func families(
         layer: KeyLayer,
-        spaces: [SpaceID]
+        spaces: [SpaceID],
+        glyph: (UInt32) -> String? = LayoutKeyGlyph.char(for:)
     ) -> [OnboardingKeyFamily] {
         var families: [OnboardingKeyFamily] = []
         if let focus = directional(
             layer: layer,
-            command: "focus"
+            command: "focus",
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
@@ -26,7 +28,11 @@ enum OnboardingKeys {
                 )
             )
         }
-        if let swap = directional(layer: layer, command: "swap") {
+        if let swap = directional(
+            layer: layer,
+            command: "swap",
+            glyph: glyph
+        ) {
             families.append(
                 OnboardingKeyFamily(
                     id: "swap",
@@ -42,7 +48,8 @@ enum OnboardingKeys {
         if let go = digits(
             layer: layer,
             command: "focus_space",
-            spaces: spaces
+            spaces: spaces,
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
@@ -59,7 +66,8 @@ enum OnboardingKeys {
         if let move = digits(
             layer: layer,
             command: "move_to_space",
-            spaces: spaces
+            spaces: spaces,
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
@@ -76,7 +84,8 @@ enum OnboardingKeys {
         if let follow = digits(
             layer: layer,
             command: "move_to_space_and_follow",
-            spaces: spaces
+            spaces: spaces,
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
@@ -95,7 +104,8 @@ enum OnboardingKeys {
         if let settings = single(
             combo: layer.bindings.first {
                 $0.lua == KeybindingCatalog.openSettings.lua
-            }?.combo
+            }?.combo,
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
@@ -108,7 +118,8 @@ enum OnboardingKeys {
         if let panel = single(
             combo: layer.bindings.first {
                 $0.lua == ShortcutsOpenBinding.lua
-            }?.combo
+            }?.combo,
+            glyph: glyph
         ) {
             families.append(
                 OnboardingKeyFamily(
